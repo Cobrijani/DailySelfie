@@ -4,5 +4,10 @@
     <string name="app_name">DailySelfie</string>
     <string name="hello_world">Hello world!</string>
     <string name="camera_menu_item">camera</string>
+    <string name="app_camera_album">DailySelfie</string>
+    <string name="contentDescImage">Image taken from daily selfie</string>
+    <string name="zoomedImageDesc">Image in zoomed mode</string>
+    <string name="title_activity_image">ImageActivity</string>
+    <string name="action_settings">Settings</string>
 
 </resources>
