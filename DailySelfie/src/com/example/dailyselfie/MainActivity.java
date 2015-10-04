@@ -3,15 +3,18 @@ package com.example.dailyselfie;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import android.app.AlarmManager;
 import android.app.ListActivity;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -20,7 +23,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.LinearLayout;
 
 public class MainActivity extends ListActivity {
 
@@ -265,7 +271,8 @@ public class MainActivity extends ListActivity {
 		super.onResume();
 
 		if (mAdapter.getCount() == 0) {
-			loadItems();
+			new LoadBitmapsAsyncTask().execute(getAlbumDir());
+			// loadItems();
 		}
 		stopAlarm();
 	}
@@ -275,6 +282,50 @@ public class MainActivity extends ListActivity {
 		Log.i(TAG, "Entered onPause()");
 		super.onPause();
 		startAlarm();
+
+	}
+
+	class LoadBitmapsAsyncTask extends AsyncTask<File, Void, ArrayList<DailySelfieImage>> {
+
+		ProgressDialog mProgressDialog;
+
+		@Override
+		protected ArrayList<DailySelfieImage> doInBackground(File... params) {
+			File[] files = params[0].listFiles();
+			ArrayList<DailySelfieImage> newList = new ArrayList<DailySelfieImage>();
+			if (files != null) {
+				for (File child : files) {
+					Bitmap image = decodeBitmapFromFile(child.getAbsolutePath(), 120, 100);
+					newList.add(new DailySelfieImage(image, child.getAbsolutePath()));
+
+				}
+
+			}
+			return newList;
+		}
+
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+			mProgressDialog = new ProgressDialog(MainActivity.this);
+
+			mProgressDialog.setMessage("Loading images...");
+			mProgressDialog.setIndeterminate(false);
+			mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+			mProgressDialog.setCancelable(true);
+			mProgressDialog.show();
+		}
+
+		@Override
+		protected void onPostExecute(ArrayList<DailySelfieImage> result) {
+			super.onPostExecute(result);
+			if (result != null) {
+				for (int i = 0; i < result.size(); ++i) {
+					mAdapter.add(result.get(i));
+				}
+				mProgressDialog.dismiss();
+			}
+		}
 
 	}
 }
