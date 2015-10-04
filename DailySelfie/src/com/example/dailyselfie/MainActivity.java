@@ -1,14 +1,13 @@
 package com.example.dailyselfie;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.ListActivity;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,18 +21,24 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ImageView;
-import android.widget.ListView;
 
 public class MainActivity extends ListActivity {
 
 	static final int REQUEST_TAKE_PHOTO = 1;
 	public static final String BITMAP_IMAGE = "BitmapImage";
 
+	public static final String TAG = "Daily selfie";
+
 	private String mCurrentPhotoPath;
 	private DailySelfieListAdapter mAdapter;
 
 	private AlbumStorageDirFactory mAlbumStorageDirFactory = null;
+
+	private AlarmManager mAlarmManager;
+	private Intent mSelfieBroadcastIntent;
+	private PendingIntent mSelfieBroadcastPendingIntent;
+
+	private static final long INTERVAL_TIME_TWO_MINS = 2 * 60 * 1000;
 
 	private String getAlbumName() {
 		return getString(R.string.app_camera_album);
@@ -117,8 +122,11 @@ public class MainActivity extends ListActivity {
 
 		Bitmap bitmap = decodeBitmapFromFile(mCurrentPhotoPath, 120, 100);
 
-		DailySelfieImage newSelfieImage = new DailySelfieImage(bitmap, mCurrentPhotoPath);
-		mAdapter.add(newSelfieImage);
+		if (bitmap != null) {
+
+			DailySelfieImage newSelfieImage = new DailySelfieImage(bitmap, mCurrentPhotoPath);
+			mAdapter.add(newSelfieImage);
+		}
 	}
 
 	private File createImageFile() throws IOException {
@@ -163,6 +171,7 @@ public class MainActivity extends ListActivity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		Log.i(TAG, "Entered onCreate()");
 		super.onCreate(savedInstanceState);
 
 		mAdapter = new DailySelfieListAdapter(getApplicationContext());
@@ -183,6 +192,27 @@ public class MainActivity extends ListActivity {
 			}
 		});
 
+		setAlarm();
+
+	}
+
+	private void setAlarm() {
+
+		mAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+		mSelfieBroadcastIntent = new Intent(MainActivity.this, SelfieBroadcast.class);
+		mSelfieBroadcastPendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, mSelfieBroadcastIntent, 0);
+
+	}
+
+	private void startAlarm() {
+		Log.i(TAG, "Starting alarm service");
+		mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + INTERVAL_TIME_TWO_MINS,
+				INTERVAL_TIME_TWO_MINS, mSelfieBroadcastPendingIntent);
+	}
+
+	private void stopAlarm() {
+		Log.i(TAG, "Stopping alarm service");
+		mAlarmManager.cancel(mSelfieBroadcastPendingIntent);
 	}
 
 	@Override
@@ -231,17 +261,20 @@ public class MainActivity extends ListActivity {
 
 	@Override
 	protected void onResume() {
+		Log.i(TAG, "Entered onResume()");
 		super.onResume();
 
 		if (mAdapter.getCount() == 0) {
 			loadItems();
 		}
+		stopAlarm();
 	}
 
 	@Override
 	protected void onPause() {
-		// TODO Auto-generated method stub
+		Log.i(TAG, "Entered onPause()");
 		super.onPause();
+		startAlarm();
 
 	}
 }

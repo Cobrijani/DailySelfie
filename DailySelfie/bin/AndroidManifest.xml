@@ -29,6 +29,12 @@
             android:name=".ImageActivity"
             android:label="@string/title_activity_image" >
         </activity>
+
+        <receiver
+            android:name=".SelfieBroadcast"
+            android:enabled="true"
+            android:exported="true" >
+        </receiver>
     </application>
 
 </manifest>
